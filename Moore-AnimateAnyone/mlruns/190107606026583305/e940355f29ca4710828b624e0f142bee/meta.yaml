@@ -1,0 +1,15 @@
+artifact_uri: file:///home/jovyan/Ilgar/Moore-AnimateAnyone/mlruns/190107606026583305/e940355f29ca4710828b624e0f142bee/artifacts
+end_time: 1744264111632
+entry_point_name: ''
+experiment_id: '190107606026583305'
+lifecycle_stage: active
+run_id: e940355f29ca4710828b624e0f142bee
+run_name: 20250410-0848
+run_uuid: e940355f29ca4710828b624e0f142bee
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1744264107550
+status: 3
+tags: []
+user_id: jovyan
