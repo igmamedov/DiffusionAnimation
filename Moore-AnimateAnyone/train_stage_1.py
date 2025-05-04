@@ -163,44 +163,78 @@ def log_validation(
     )
     pipe = pipe.to(accelerator.device)
 
-    ref_image_paths = [
-        "./configs/inference/ref_images/anyone-2.png",
-        "./configs/inference/ref_images/anyone-3.png",
-    ]
-    pose_image_paths = [
-        "./configs/inference/pose_images/pose-1.png",
-        "./configs/inference/pose_images/pose-1.png",
-    ]
+    # ref_image_paths = [
+    #     "./configs/inference/ref_images/anyone-2.png",
+    #     "./configs/inference/ref_images/anyone-3.png",
+    # ]
+    # pose_image_paths = [
+    #     "./configs/inference/pose_images/pose-1.png",
+    #     "./configs/inference/pose_images/pose-1.png",
+    # ]
+
+    # pil_images = []
+    # for ref_image_path in ref_image_paths:
+    #     for pose_image_path in pose_image_paths:
+    #         pose_name = pose_image_path.split("/")[-1].replace(".png", "")
+    #         ref_name = ref_image_path.split("/")[-1].replace(".png", "")
+    #         ref_image_pil = Image.open(ref_image_path).convert("RGB")
+    #         pose_image_pil = Image.open(pose_image_path).convert("RGB")
+
+    #         image = pipe(
+    #             ref_image_pil,
+    #             pose_image_pil,
+    #             width,
+    #             height,
+    #             20,
+    #             3.5,
+    #             generator=generator,
+    #         ).images
+    #         image = image[0, :, 0].permute(1, 2, 0).cpu().numpy()  # (3, 512, 512)
+    #         res_image_pil = Image.fromarray((image * 255).astype(np.uint8))
+    #         # Save ref_image, src_image and the generated_image
+    #         w, h = res_image_pil.size
+    #         canvas = Image.new("RGB", (w * 3, h), "white")
+    #         ref_image_pil = ref_image_pil.resize((w, h))
+    #         pose_image_pil = pose_image_pil.resize((w, h))
+    #         canvas.paste(ref_image_pil, (0, 0))
+    #         canvas.paste(pose_image_pil, (w, 0))
+    #         canvas.paste(res_image_pil, (w * 2, 0))
+
+    #         pil_images.append({"name": f"{ref_name}_{pose_name}", "img": canvas})
+
+    test_path = [f"../dataset/test/stage_1/sample_{i}" for i in range(50)]
 
     pil_images = []
-    for ref_image_path in ref_image_paths:
-        for pose_image_path in pose_image_paths:
-            pose_name = pose_image_path.split("/")[-1].replace(".png", "")
-            ref_name = ref_image_path.split("/")[-1].replace(".png", "")
-            ref_image_pil = Image.open(ref_image_path).convert("RGB")
-            pose_image_pil = Image.open(pose_image_path).convert("RGB")
+    for path in test_path:
+        pose_image_path = path + "/target_pose.png"
+        ref_image_path = path + "/source.png"
+        
+        pose_name = pose_image_path.split("/")[-1].replace(".png", "")
+        ref_name = ref_image_path.split("/")[-1].replace(".png", "")
+        ref_image_pil = Image.open(ref_image_path).convert("RGB")
+        pose_image_pil = Image.open(pose_image_path).convert("RGB")
 
-            image = pipe(
-                ref_image_pil,
-                pose_image_pil,
-                width,
-                height,
-                20,
-                3.5,
-                generator=generator,
-            ).images
-            image = image[0, :, 0].permute(1, 2, 0).cpu().numpy()  # (3, 512, 512)
-            res_image_pil = Image.fromarray((image * 255).astype(np.uint8))
-            # Save ref_image, src_image and the generated_image
-            w, h = res_image_pil.size
-            canvas = Image.new("RGB", (w * 3, h), "white")
-            ref_image_pil = ref_image_pil.resize((w, h))
-            pose_image_pil = pose_image_pil.resize((w, h))
-            canvas.paste(ref_image_pil, (0, 0))
-            canvas.paste(pose_image_pil, (w, 0))
-            canvas.paste(res_image_pil, (w * 2, 0))
+        image = pipe(
+            ref_image_pil,
+            pose_image_pil,
+            width,
+            height,
+            20,
+            3.5,
+            generator=generator,
+        ).images
+        image = image[0, :, 0].permute(1, 2, 0).cpu().numpy()  # (3, 512, 512)
+        res_image_pil = Image.fromarray((image * 255).astype(np.uint8))
+        # Save ref_image, src_image and the generated_image
+        w, h = res_image_pil.size
+        canvas = Image.new("RGB", (w * 3, h), "white")
+        ref_image_pil = ref_image_pil.resize((w, h))
+        pose_image_pil = pose_image_pil.resize((w, h))
+        canvas.paste(ref_image_pil, (0, 0))
+        canvas.paste(pose_image_pil, (w, 0))
+        canvas.paste(res_image_pil, (w * 2, 0))
 
-            pil_images.append({"name": f"{ref_name}_{pose_name}", "img": canvas})
+        pil_images.append({"name": f"{ref_name}_{pose_name}", "img": res_image_pil})
 
     vae = vae.to(dtype=torch.float16)
     image_enc = image_enc.to(dtype=torch.float16)
@@ -639,15 +673,26 @@ def main(cfg):
                             height=cfg.data.train_height,
                         )
 
+                        # for sample_id, sample_dict in enumerate(sample_dicts):
+                        #     sample_name = sample_dict["name"]
+                        #     img = sample_dict["img"]
+                        #     with TemporaryDirectory() as temp_dir:
+                        #         out_file = Path(
+                        #             f"{temp_dir}/{global_step:06d}-{sample_name}.gif"
+                        #         )
+                        #         img.save(out_file)
+                        #         mlflow.log_artifact(out_file)
+
                         for sample_id, sample_dict in enumerate(sample_dicts):
                             sample_name = sample_dict["name"]
                             img = sample_dict["img"]
-                            with TemporaryDirectory() as temp_dir:
-                                out_file = Path(
-                                    f"{temp_dir}/{global_step:06d}-{sample_name}.gif"
-                                )
-                                img.save(out_file)
-                                mlflow.log_artifact(out_file)
+                            
+                            save_validation_dir = f"../dataset/test/stage_1/sample_{sample_id}"   
+                            out_file = Path(
+                                f"{save_validation_dir}/generationstep_{global_step:06d}.png"
+                            )
+                            img.save(out_file,"PNG")
+                            mlflow.log_artifact(out_file)
 
             logs = {
                 "step_loss": loss.detach().item(),

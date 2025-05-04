@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 
 import sys
 sys.path.append("../Moore-AnimateAnyone")
-from src.utils.util import read_frames
-
+from src.utils.util import get_fps, read_frames, save_videos_from_pil
 import os
  
 def download_url(urls, save_dir):
@@ -117,28 +116,57 @@ def generate_triplets(vid_path_list, save_dir_path, detector, sample_margin=70, 
             else:
                 break
 
-def change_params_mp4(original_path, new_path, fps=30, height=768, width=576, num_frames=90):
+def save_pose_from_mp4(file_path, out_path, detector):
     """
-    Меняем параметры видео
+    Извлекает позу по видео
 
     Args:
-        original_path (str): путь к изначальномсу видео
-        new_path (str): путь сохранения нового
-        fps (int): новое кол-во кадров в секунду
-        height (int): высота кадра
-        width (int): ширина кадра
-        num_frames (int): общее число кадров
+        file_path (str): путь к исходному видео 
+        out_path (str): путь для сохранения позы видео
+        detector (DWposeDetector): предобученная модель
     """
-    cap = cv2.VideoCapture(original_path)    
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
-    out = cv2.VideoWriter(new_path, fourcc, fps, (width, height))
+    fps = get_fps(file_path)
+    frames = read_frames(file_path)
+    kps_results = []
+    for i, frame_pil in enumerate(frames):
+        result, score = detector(frame_pil)
+        score = np.mean(score, axis=-1)
+        kps_results.append(result)
     
-    for frame_id in range(num_frames):
+    save_videos_from_pil(kps_results, out_path, fps=fps)
+
+def reduce_frames(input_video_path, output_video_path, step=3):
+    """
+    Уменьшает количество кадров в видео, сохраняя только каждый N-й кадр.
+    
+    Args:
+        input_video_path (str): Путь к исходному видео.
+        output_video_path (str): Путь для сохранения результата.
+        step (int): Шаг пропуска кадров (1 = без пропуска, 2 = каждый второй, 3 = каждый третий и т. д.).
+    """
+    cap = cv2.VideoCapture(input_video_path)
+    
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(output_video_path, fourcc, fps / step, (width, height))
+    
+    frame_count = 0
+    saved_count = 0
+    
+    while True:
         ret, frame = cap.read()
-        resized_frame = cv2.resize(frame, (width, height))
         if not ret:
-            break 
-        out.write(resized_frame)  
+            break
+
+        if frame_count % step == 0:
+            out.write(frame)
+            saved_count += 1
+        
+        frame_count += 1
     
     cap.release()
-    out.release() 
+    out.release()
