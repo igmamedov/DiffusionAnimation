@@ -141,7 +141,7 @@ def log_validation(
     accelerator,
     width,
     height,
-    clip_length=24,
+    clip_length=100,
     generator=None,
 ):
     logger.info("Running validation... ")
@@ -166,20 +166,62 @@ def log_validation(
     )
     pipe = pipe.to(accelerator.device)
 
-    test_cases = [
-        (
-            "./configs/inference/ref_images/anyone-3.png",
-            "./configs/inference/pose_videos/anyone-video-1_kps.mp4",
-        ),
-        (
-            "./configs/inference/ref_images/anyone-2.png",
-            "./configs/inference/pose_videos/anyone-video-2_kps.mp4",
-        ),
-    ]
+    # test_cases = [
+    #     (
+    #         "./configs/inference/ref_images/anyone-3.png",
+    #         "./configs/inference/pose_videos/anyone-video-1_kps.mp4",
+    #     ),
+    #     (
+    #         "./configs/inference/ref_images/anyone-2.png",
+    #         "./configs/inference/pose_videos/anyone-video-2_kps.mp4",
+    #     ),
+    # ]
+
+    # results = []
+    # for test_case in test_cases:
+    #     ref_image_path, pose_video_path = test_case
+    #     ref_name = Path(ref_image_path).stem
+    #     pose_name = Path(pose_video_path).stem
+    #     ref_image_pil = Image.open(ref_image_path).convert("RGB")
+
+    #     pose_list = []
+    #     pose_tensor_list = []
+    #     pose_images = read_frames(pose_video_path)
+    #     pose_transform = transforms.Compose(
+    #         [transforms.Resize((height, width)), transforms.ToTensor()]
+    #     )
+    #     for pose_image_pil in pose_images[:clip_length]:
+    #         pose_tensor_list.append(pose_transform(pose_image_pil))
+    #         pose_list.append(pose_image_pil)
+
+    #     pose_tensor = torch.stack(pose_tensor_list, dim=0)  # (f, c, h, w)
+    #     pose_tensor = pose_tensor.transpose(0, 1)
+
+    #     pipeline_output = pipe(
+    #         ref_image_pil,
+    #         pose_list,
+    #         width,
+    #         height,
+    #         clip_length,
+    #         20,
+    #         3.5,
+    #         generator=generator,
+    #     )
+    #     video = pipeline_output.videos
+
+    #     # Concat it with pose tensor
+    #     pose_tensor = pose_tensor.unsqueeze(0)
+    #     video = torch.cat([video, pose_tensor], dim=0)
+
+    #     results.append({"name": f"{ref_name}_{pose_name}", "vid": video})
+
+    test_path = [f"../dataset/test/stage_2/sample_{i}" for i in range(10)]
 
     results = []
-    for test_case in test_cases:
-        ref_image_path, pose_video_path = test_case
+    for path in test_path:
+        ref_image_path = path + "/ref_image.png"
+        pose_video_path = path + "/pose_vid.mp4"
+        
         ref_name = Path(ref_image_path).stem
         pose_name = Path(pose_video_path).stem
         ref_image_pil = Image.open(ref_image_path).convert("RGB")
@@ -190,6 +232,7 @@ def log_validation(
         pose_transform = transforms.Compose(
             [transforms.Resize((height, width)), transforms.ToTensor()]
         )
+        
         for pose_image_pil in pose_images[:clip_length]:
             pose_tensor_list.append(pose_transform(pose_image_pil))
             pose_list.append(pose_image_pil)
@@ -211,9 +254,11 @@ def log_validation(
 
         # Concat it with pose tensor
         pose_tensor = pose_tensor.unsqueeze(0)
-        video = torch.cat([video, pose_tensor], dim=0)
+        #video = torch.cat([video, pose_tensor], dim=0)
 
         results.append({"name": f"{ref_name}_{pose_name}", "vid": video})
+
+    
 
     del tmp_denoising_unet
     del pipe
@@ -672,15 +717,25 @@ def main(cfg):
                             generator=generator,
                         )
 
+                        # for sample_id, sample_dict in enumerate(sample_dicts):
+                        #     sample_name = sample_dict["name"]
+                        #     vid = sample_dict["vid"]
+                        #     with TemporaryDirectory() as temp_dir:
+                        #         out_file = Path(
+                        #             f"{temp_dir}/{global_step:06d}-{sample_name}.gif"
+                        #         )
+                        #         save_videos_grid(vid, out_file, n_rows=2)
+                        #         mlflow.log_artifact(out_file)
+
                         for sample_id, sample_dict in enumerate(sample_dicts):
                             sample_name = sample_dict["name"]
                             vid = sample_dict["vid"]
-                            with TemporaryDirectory() as temp_dir:
-                                out_file = Path(
-                                    f"{temp_dir}/{global_step:06d}-{sample_name}.gif"
-                                )
-                                save_videos_grid(vid, out_file, n_rows=2)
-                                mlflow.log_artifact(out_file)
+
+                            save_validation_dir = f"../dataset/test/stage_2/sample_{sample_id}" 
+                            out_file = Path(
+                                f"{save_validation_dir}/generationstep_{global_step:06d}.gif"
+                            )
+                            save_videos_grid(vid, out_file, n_rows=1)
 
             logs = {
                 "step_loss": loss.detach().item(),

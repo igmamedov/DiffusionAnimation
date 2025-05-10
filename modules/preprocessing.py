@@ -170,3 +170,52 @@ def reduce_frames(input_video_path, output_video_path, step=3):
     
     cap.release()
     out.release()
+
+def generate_vid_triplets(vid_path_list, save_dir_path, detector, n_examples=10, clip_length=100):
+    """
+    Генерирует видео для тестировния. На выходе сохраняем:
+    * входной кадр
+    * видео с позой
+    * оригинальное видео
+
+    Args:
+        vid_path_list (list[str]): список путей до оригинальных видео 
+        save_dir_path (str): путь для сохранения
+        detector (DWposeDetector): предобученная модель
+        n_examples (int): кол-во примеров для генерации
+        clip_length (int): длина одной генерации
+    """
+    
+    n_generated = 0
+     
+    for i, path in enumerate(vid_path_list):
+        width, height, frame_count, fps = get_params_mp4(path, log=False)
+        fps = get_fps(path)
+        frames = read_frames(path)
+        
+        if (clip_length < frame_count) and (n_generated < n_examples):
+            sample_path = save_dir_path + f"sample_{i}"
+            os.makedirs(sample_path, exist_ok=True)
+            orig_vid = []
+            pose_vid = []
+
+        
+            start_idx = np.random.randint(0, frame_count - clip_length - 1)
+            ref_img_idx = np.random.randint(0, frame_count - 1)
+            ref_image = frames[ref_img_idx]
+
+            for j in tqdm(range(clip_length), desc=f'generation: {n_generated}'):
+                frame_pil = frames[start_idx+j]
+                target_pose, score = detector(frame_pil)
+
+                orig_vid.append(frame_pil)
+                pose_vid.append(target_pose)
+
+            ref_image.save(sample_path + "/ref_image.png","PNG")
+
+            save_videos_from_pil(orig_vid, sample_path + "/orig_vid.mp4", fps=fps)
+            save_videos_from_pil(pose_vid, sample_path + "/pose_vid.mp4", fps=fps)
+            
+            n_generated += 1
+        else:
+            break
