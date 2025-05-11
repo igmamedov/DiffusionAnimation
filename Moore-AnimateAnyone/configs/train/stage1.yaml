@@ -12,13 +12,13 @@ solver:
   mixed_precision: 'fp16'
   enable_xformers_memory_efficient_attention: True 
   gradient_checkpointing: False 
-  max_train_steps: 100
+  max_train_steps: 30000
   max_grad_norm: 1.0
   # lr
   learning_rate: 1.0e-5
   scale_lr: False 
   lr_warmup_steps: 1
-  lr_scheduler: 'constant'
+  lr_scheduler: 'cosine'
 
   # optimizer
   use_8bit_adam: True 
@@ -28,11 +28,11 @@ solver:
   adam_epsilon: 1.0e-8
 
 val:
-  validation_steps: 50
+  validation_steps: 1000
 
 
 noise_scheduler_kwargs:
-  num_train_timesteps: 100
+  num_train_timesteps: 1000
   beta_start:          0.00085
   beta_end:            0.012
   beta_schedule:       "scaled_linear"
@@ -53,7 +53,7 @@ pose_guider_pretrain: True
 
 seed: 12580
 resume_from_checkpoint: ''
-checkpointing_steps: 50
-save_model_epoch_interval: 50
+checkpointing_steps: 10000
+save_model_epoch_interval: 5
 exp_name: 'stage1'
 output_dir: './exp_output'  

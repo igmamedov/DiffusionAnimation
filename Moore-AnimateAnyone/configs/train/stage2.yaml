@@ -1,24 +1,24 @@
 data:
   train_bs: 2
-  train_width: 512 
+  train_width: 512
   train_height: 512 
   meta_paths:
     - "./data/fashion_meta.json"
-  sample_rate: 4 
-  n_sample_frames: 8
+  sample_rate: 4
+  n_sample_frames: 24
 
 solver:
-  gradient_accumulation_steps: 10
+  gradient_accumulation_steps: 2
   mixed_precision: 'fp16'
   enable_xformers_memory_efficient_attention: True
   gradient_checkpointing: True
-  max_train_steps: 100
+  max_train_steps: 10000
   max_grad_norm: 1.0
   # lr
-  learning_rate: 1e-5
+  learning_rate: 1e-4
   scale_lr: False 
   lr_warmup_steps: 1
-  lr_scheduler: 'constant'
+  lr_scheduler: 'cosine'
 
   # optimizer
   use_8bit_adam: True 
@@ -28,11 +28,11 @@ solver:
   adam_epsilon: 1.0e-8
 
 val:
-  validation_steps: 50 
+  validation_steps: 2000
 
 
 noise_scheduler_kwargs:
-  num_train_timesteps: 100
+  num_train_timesteps: 1000
   beta_start:          0.00085
   beta_end:            0.012
   beta_schedule:       "linear"
@@ -50,10 +50,10 @@ noise_offset: 0.05
 snr_gamma: 5.0
 enable_zero_snr: True
 stage1_ckpt_dir: './exp_output/stage1'
-stage1_ckpt_step: 100
+stage1_ckpt_step: 30000
 
 seed: 12580
 resume_from_checkpoint: ''
-checkpointing_steps: 2000
+checkpointing_steps: 5000
 exp_name: 'stage2'
 output_dir: './exp_output' 
