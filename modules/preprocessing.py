@@ -219,3 +219,33 @@ def generate_vid_triplets(vid_path_list, save_dir_path, detector, n_examples=10,
             n_generated += 1
         else:
             break
+
+def trim_vid(input_video_path, output_video_path, n):
+    """
+    Обрезаем у видео справа n пикселей
+
+    Args:
+        input_video_path (str): путь к исходному видео 
+        output_video_path (str): путь сохранения
+        n (int): кол-во пикселей
+    """
+
+    cap = cv2.VideoCapture(input_video_path)
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+    out = cv2.VideoWriter(output_video_path, fourcc, fps, (n, height))
+    
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        
+        trimmed_frame = frame[:, -n:]
+        out.write(trimmed_frame)
+    
+    cap.release()
+    out.release()
