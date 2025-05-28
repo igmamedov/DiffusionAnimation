@@ -12,6 +12,8 @@
 
 __Moore-AnimateAnyone__ - модифицированеая реализация [статьи](https://arxiv.org/pdf/2311.17117) компанией [Moore Threads](https://en.mthreads.com/product/S80)
 
+__UniAnimate__ - репизиторий реализпции [статьи](https://arxiv.org/abs/2406.01188)
+
 __dataset__ - данные используемые в исследовании
 
 __modules__ - дополнительные необходимые модули для исследования
